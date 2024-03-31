@@ -61,6 +61,7 @@ for image in $vendor_images; do
     if [ -e $image ]; then
         echo "mounting vendor from $image"
         mount $image /vendor -o ro
+        break
     fi
 done
 
@@ -69,6 +70,7 @@ for image in $vendor_dlkm_images; do
     if [ -e $image ]; then
         echo "mounting vendor_dlkm from $image"
         mount $image /vendor_dlkm -o ro
+        break
     fi
 done
 
