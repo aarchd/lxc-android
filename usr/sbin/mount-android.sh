@@ -54,39 +54,43 @@ if [ -e "/dev/disk/by-partlabel/super" ]; then
     dmsetup create --concise "$(parse-android-dynparts /dev/disk/by-partlabel/super)"
 fi
 
-echo "checking for vendor mount point"
+if [ ! -e "/vendor/build.prop" ]; then
+    echo "checking for vendor mount point"
+    vendor_images="/userdata/vendor.img /var/lib/lxc/android/vendor.img /dev/disk/by-partlabel/vendor${ab_slot_suffix} /dev/disk/by-partlabel/vendor_a /dev/disk/by-partlabel/vendor_b /dev/mapper/dynpart-vendor /dev/mapper/dynpart-vendor${ab_slot_suffix} /dev/mapper/dynpart-vendor_a /dev/mapper/dynpart-vendor_b"
+    for image in $vendor_images; do
+        if [ -e $image ]; then
+            echo "mounting vendor from $image"
+            mount $image /vendor -o ro
 
-vendor_images="/userdata/vendor.img /var/lib/lxc/android/vendor.img /dev/disk/by-partlabel/vendor${ab_slot_suffix} /dev/disk/by-partlabel/vendor_a /dev/disk/by-partlabel/vendor_b /dev/mapper/dynpart-vendor /dev/mapper/dynpart-vendor${ab_slot_suffix} /dev/mapper/dynpart-vendor_a /dev/mapper/dynpart-vendor_b"
-for image in $vendor_images; do
-    if [ -e $image ]; then
-        echo "mounting vendor from $image"
-        mount $image /vendor -o ro
-
-        if [ -e "/vendor/build.prop" ]; then
-            echo "found valid vendor partition: $image"
-            break
-        else
-            echo "$image is not a valid vendor partition"
-            umount /vendor
+            if [ -e "/vendor/build.prop" ]; then
+                echo "found valid vendor partition: $image"
+                break
+            else
+                echo "$image is not a valid vendor partition"
+                umount /vendor
+            fi
         fi
-    fi
-done
+    done
+fi
 
-vendor_dlkm_images="/dev/mapper/dynpart-vendor_dlkm /dev/mapper/dynpart-vendor_dlkm${ab_slot_suffix} /dev/mapper/dynpart-vendor_dlkm_a /dev/mapper/dynpart-vendor_dlkm_b"
-for image in $vendor_dlkm_images; do
-    if [ -e $image ]; then
-        echo "mounting vendor_dlkm from $image"
-        mount $image /vendor_dlkm -o ro
+if [ ! -e "/vendor_dlkm/etc/build.prop" ]; then
+    echo "checking for vendor_dlkm mount point"
+    vendor_dlkm_images="/dev/mapper/dynpart-vendor_dlkm /dev/mapper/dynpart-vendor_dlkm${ab_slot_suffix} /dev/mapper/dynpart-vendor_dlkm_a /dev/mapper/dynpart-vendor_dlkm_b"
+    for image in $vendor_dlkm_images; do
+        if [ -e $image ]; then
+            echo "mounting vendor_dlkm from $image"
+            mount $image /vendor_dlkm -o ro
 
-        if [ -e "/vendor_dlkm/etc/build.prop" ]; then
-            echo "found valid vendor_dlkm partition: $image"
-            break
-        else
-            echo "$image is not a valid vendor_dlkm partition"
-            umount /vendor_dlkm
+            if [ -e "/vendor_dlkm/etc/build.prop" ]; then
+                echo "found valid vendor_dlkm partition: $image"
+                break
+            else
+                echo "$image is not a valid vendor_dlkm partition"
+                umount /vendor_dlkm
+            fi
         fi
-    fi
-done
+    done
+fi
 
 sys_vendor="/sys/firmware/devicetree/base/firmware/android/fstab/vendor"
 if [ -e $sys_vendor ] && ! mountpoint -q -- /vendor; then
