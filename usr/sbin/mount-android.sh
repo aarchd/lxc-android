@@ -32,7 +32,7 @@ parse_mount_flags() {
     org_options="$1"
     options=""
     for i in $(echo $org_options | tr "," "\n"); do
-        [[ "$i" =~ context|secure ]] && continue
+        [[ "$i" =~ context|trusted ]] && continue
         options+=$i","
     done
     options=${options%?}
