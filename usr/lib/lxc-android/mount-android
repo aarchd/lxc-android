@@ -22,12 +22,13 @@ find_partition_path() {
     label=$1
     for dir in $disk_dirs; do
         # On A/B systems not all of the partitions are duplicated, so we have to check with and without suffix
-        path="/dev/disk/$dir/${label}${ab_slot_suffix}"
+        base="/dev/disk/$dir"
+        path="${base}/${label}${ab_slot_suffix}"
         if [ -e "$path" ]; then
             printf '%s\n' "$path"
             return
         fi
-        path="/dev/disk/$dir/$label"
+        path="${base}/$label"
         if [ -e "$path" ]; then
             printf '%s\n' "$path"
             return
@@ -39,7 +40,7 @@ find_partition_path() {
 parse_mount_flags() {
     flags=
     IFS=,
-    set -- $1
+    set -- "$1"
     for opt; do
         case $opt in
             *context*|*trusted*) ;;
@@ -48,45 +49,6 @@ parse_mount_flags() {
     done
     printf '%s\n' "$flags"
 }
-
-if [ -n "$BIND_MOUNT_PATH" ] && ! mountpoint -q -- "$BIND_MOUNT_PATH" 2>/dev/null; then
-    for img in /userdata/android-rootfs.img /var/lib/lxc/android/android-rootfs.img; do
-        if [ -f "$img" ]; then
-            mount "$img" "$BIND_MOUNT_PATH" && break
-        fi
-    done
-fi
-
-if [ -e /dev/disk/by-partlabel/super ]; then
-    dmsetup create --concise "$(parse-android-dynparts /dev/disk/by-partlabel/super)"
-fi
-
-if [ ! -e /vendor/build.prop ]; then
-    for img in /userdata/vendor.img /var/lib/lxc/android/vendor.img \
-        /dev/disk/by-partlabel/vendor${ab_slot_suffix} /dev/disk/by-partlabel/vendor_a \
-        /dev/disk/by-partlabel/vendor_b /dev/mapper/dynpart-vendor \
-        /dev/mapper/dynpart-vendor${ab_slot_suffix} /dev/mapper/dynpart-vendor_a \
-        /dev/mapper/dynpart-vendor_b; do
-    if [ -e "$img" ]; then
-        if mount "$img" /vendor -o ro; then
-            [ -e /vendor/build.prop ] && break
-            umount /vendor
-        fi
-    fi
-done
-fi
-
-if [ ! -e /vendor_dlkm/etc/build.prop ]; then
-    for img in /dev/mapper/dynpart-vendor_dlkm /dev/mapper/dynpart-vendor_dlkm${ab_slot_suffix} \
-        /dev/mapper/dynpart-vendor_dlkm_a /dev/mapper/dynpart-vendor_dlkm_b; do
-    if [ -e "$img" ]; then
-        if mount "$img" /vendor_dlkm -o ro; then
-            [ -e /vendor_dlkm/etc/build.prop ] && break
-            umount /vendor_dlkm
-        fi
-    fi
-done
-fi
 
 ver=$(uname -r | cut -d. -f1)
 
@@ -124,7 +86,7 @@ while IFS= read -r line; do
         "#"*|"") continue ;;
     esac
 
-    set -- $line
+    set -- "$line"
     [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ] && continue
 
     case "$2" in
@@ -150,7 +112,7 @@ while IFS= read -r line; do
       mount -o bind "$2" "$BIND_MOUNT_PATH$2"
   fi
 done <<EOF
-$(cat $fstab_files 2>/dev/null)
+$(cat "$fstab_files" 2>/dev/null)
 EOF
 
 # vim: set ft=sh ts=4 sw=4 et:
