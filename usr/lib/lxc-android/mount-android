@@ -111,7 +111,7 @@ fi
 fstab_files=$(ls /vendor/etc/fstab* 2>/dev/null)
 if [ -z "$fstab_files" ]; then
     echo "fstab not found"
-    exit 1
+    exit
 fi
 
 if [ -n "$EXTRA_FSTAB" ]; then
